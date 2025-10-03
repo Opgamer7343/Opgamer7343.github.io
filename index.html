@@ -1,0 +1,85 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Discord Chat Clone</title>
+<style>
+body { background: #36393f; font-family: Arial; color: #ddd; display: flex; justify-content: center; padding-top: 50px; }
+#chatContainer { width: 400px; height: 500px; background: #2f3136; border-radius: 8px; display: flex; flex-direction: column; }
+#messages { flex: 1; overflow-y: auto; padding: 10px; }
+.message { margin-bottom: 10px; padding: 5px; border-radius: 5px; cursor: context-menu; }
+.username { font-weight: bold; margin-right: 5px; }
+#inputBox { display: flex; padding: 10px; }
+#inputBox input { flex: 1; padding: 8px; border-radius: 5px; border: none; background: #40444b; color: #fff; }
+#inputBox button { margin-left: 5px; padding: 8px 12px; border: none; border-radius: 5px; background: #7289da; color: #fff; cursor: pointer; }
+</style>
+</head>
+<body>
+<div id="chatContainer">
+  <div id="messages"></div>
+  <div id="inputBox">
+    <input type="text" id="msgInput" placeholder="Type a message..." />
+    <button onclick="sendMsg()">Send</button>
+  </div>
+</div>
+
+<script>
+const messagesDiv = document.getElementById('messages');
+const input = document.getElementById('msgInput');
+let currentUser = prompt("Enter your username:") || "Anon";
+
+function loadMessages() {
+  const msgs = JSON.parse(localStorage.getItem('chatMsgs') || '[]');
+  messagesDiv.innerHTML = '';
+  msgs.forEach((m, i) => addMessage(m.username, m.text, m.color, i));
+}
+
+function saveMessages(msgs) {
+  localStorage.setItem('chatMsgs', JSON.stringify(msgs));
+}
+
+function addMessage(username, text, color, index) {
+  const div = document.createElement('div');
+  div.className = 'message';
+  div.innerHTML = `<span class="username" style="color:${color}">${username}</span> ${text}`;
+  messagesDiv.appendChild(div);
+  messagesDiv.scrollTop = messagesDiv.scrollHeight;
+
+  // right click menu for own messages
+  div.addEventListener('contextmenu', e => {
+    e.preventDefault();
+    if(username !== currentUser) return;
+    const action = prompt("Type 'edit' to edit or 'delete' to delete message:");
+    if(action === 'edit') {
+      const newText = prompt("Edit your message:", text);
+      if(newText !== null) {
+        div.innerHTML = `<span class="username" style="color:${color}">${username}</span> ${newText}`;
+        const msgs = JSON.parse(localStorage.getItem('chatMsgs') || '[]');
+        msgs[index].text = newText;
+        saveMessages(msgs);
+      }
+    } else if(action === 'delete') {
+      div.remove();
+      const msgs = JSON.parse(localStorage.getItem('chatMsgs') || '[]');
+      msgs.splice(index, 1);
+      saveMessages(msgs);
+      loadMessages(); // reload to fix indices
+    }
+  });
+}
+
+function sendMsg() {
+  const text = input.value.trim();
+  if(!text) return;
+  const color = '#' + Math.floor(Math.random()*16777215).toString(16);
+  const msgs = JSON.parse(localStorage.getItem('chatMsgs') || '[]');
+  msgs.push({username: currentUser, text, color});
+  saveMessages(msgs);
+  loadMessages();
+  input.value = '';
+}
+
+loadMessages();
+</script>
+</body>
+</html>
